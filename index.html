@@ -17,18 +17,21 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 10px 20px;
             min-height: 100vh;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            touch-action: none;
+            overflow-y: auto;
+            overflow-x: auto;
         }
 
         h1 {
             margin-bottom: 10px;
             color: #333;
+            font-size: 24px;
+            text-align: center;
         }
 
         .status {
@@ -48,42 +51,49 @@
             color: white;
         }
 
-        .controls {
-            margin-bottom: 15px;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 14px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-
         #grid-container {
             display: inline-block;
             border: 2px solid #333;
             background-color: white;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             touch-action: none;
+            margin: 20px;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 20px;
+                margin-bottom: 8px;
+            }
+
+            #grid-container {
+                margin: 15px;
+            }
+
+            .status {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            .info {
+                font-size: 12px;
+                padding: 0 10px;
+            }
+
+            .qr-container {
+                margin: 15px 10px;
+                padding: 15px;
+            }
+
+            .qr-code {
+                width: 250px;
+                height: 250px;
+            }
         }
 
         #grid {
@@ -151,10 +161,6 @@
     
     <div id="status" class="status disconnected">Connecting...</div>
 
-    <div class="controls">
-        <button id="resetBtn" onclick="resetGrid()" disabled>Reset Grid</button>
-    </div>
-
     <div id="grid-container">
         <div id="grid"></div>
     </div>
@@ -173,7 +179,6 @@
         const GRID_SIZE = 50;
         const grid = document.getElementById('grid');
         const statusEl = document.getElementById('status');
-        const resetBtn = document.getElementById('resetBtn');
         
         let isDrawing = false;
         let drawMode = null;
@@ -191,7 +196,6 @@
                 console.log('Connected to server');
                 statusEl.textContent = 'Connected - Drawing with others!';
                 statusEl.className = 'status connected';
-                resetBtn.disabled = false;
             };
 
             ws.onmessage = (event) => {
@@ -225,7 +229,6 @@
                 console.log('Disconnected from server');
                 statusEl.textContent = 'Disconnected - Reconnecting...';
                 statusEl.className = 'status disconnected';
-                resetBtn.disabled = true;
                 
                 // Attempt to reconnect after 2 seconds
                 setTimeout(connect, 2000);
@@ -361,20 +364,6 @@
                         sendUpdate(index, false);
                     }
                 }
-            }
-        }
-
-        // Reset grid
-        function resetGrid() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: 'reset'
-                }));
-                
-                // Also reset locally
-                squares.forEach(square => {
-                    square.classList.remove('white');
-                });
             }
         }
 
