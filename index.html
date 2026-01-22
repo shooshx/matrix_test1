@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Collaborative Grid Game</title>
     <style>
         * {
@@ -19,6 +19,11 @@
             align-items: center;
             padding: 20px;
             min-height: 100vh;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: none;
         }
 
         h1 {
@@ -78,6 +83,7 @@
             border: 2px solid #333;
             background-color: white;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            touch-action: none;
         }
 
         #grid {
@@ -201,9 +207,17 @@
                 const square = document.createElement('div');
                 square.className = 'square';
                 square.dataset.index = i;
+                
+                // Mouse events
                 square.addEventListener('mousedown', startDrawing);
                 square.addEventListener('mouseenter', continueDrawing);
                 square.addEventListener('mouseup', stopDrawing);
+                
+                // Touch events for mobile
+                square.addEventListener('touchstart', handleTouchStart);
+                square.addEventListener('touchmove', handleTouchMove);
+                square.addEventListener('touchend', stopDrawing);
+                
                 grid.appendChild(square);
                 squares.push(square);
             }
@@ -264,6 +278,53 @@
 
         // Stop drawing if mouse leaves the document
         document.addEventListener('mouseup', stopDrawing);
+        document.addEventListener('touchend', stopDrawing);
+
+        // Touch event handlers for mobile
+        function handleTouchStart(event) {
+            event.preventDefault(); // Prevent scrolling while drawing
+            const touch = event.touches[0];
+            const target = event.target;
+            
+            isDrawing = true;
+            const index = parseInt(target.dataset.index);
+            
+            // Set draw mode based on current square state
+            if (target.classList.contains('white')) {
+                drawMode = 'black';
+                target.classList.remove('white');
+                sendUpdate(index, false);
+            } else {
+                drawMode = 'white';
+                target.classList.add('white');
+                sendUpdate(index, true);
+            }
+        }
+
+        function handleTouchMove(event) {
+            if (!isDrawing) return;
+            
+            event.preventDefault(); // Prevent scrolling
+            
+            const touch = event.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (element && element.classList.contains('square')) {
+                const index = parseInt(element.dataset.index);
+                
+                if (drawMode === 'white') {
+                    if (!element.classList.contains('white')) {
+                        element.classList.add('white');
+                        sendUpdate(index, true);
+                    }
+                } else {
+                    if (element.classList.contains('white')) {
+                        element.classList.remove('white');
+                        sendUpdate(index, false);
+                    }
+                }
+            }
+        }
 
         // Reset grid
         function resetGrid() {
