@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Grid Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .status {
+            margin-bottom: 15px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .status.connected {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .status.disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #grid-container {
+            display: inline-block;
+            border: 2px solid #333;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(50, 10px);
+            grid-template-rows: repeat(50, 10px);
+            gap: 1px;
+            background-color: #666;
+        }
+
+        .square {
+            width: 10px;
+            height: 10px;
+            background-color: black;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+
+        .square.white {
+            background-color: white;
+        }
+
+        .info {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Collaborative Grid Game</h1>
+    
+    <div id="status" class="status disconnected">Connecting...</div>
+
+    <div class="controls">
+        <button id="resetBtn" onclick="resetGrid()" disabled>Reset Grid</button>
+    </div>
+
+    <div id="grid-container">
+        <div id="grid"></div>
+    </div>
+
+    <div class="info">
+        Click and drag to draw. Changes are shared with all users in real-time!
+    </div>
+
+    <script>
+        const GRID_SIZE = 50;
+        const grid = document.getElementById('grid');
+        const statusEl = document.getElementById('status');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        let isDrawing = false;
+        let drawMode = null;
+        let ws = null;
+        let squares = [];
+
+        // WebSocket connection
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('Connected to server');
+                statusEl.textContent = 'Connected - Drawing with others!';
+                statusEl.className = 'status connected';
+                resetBtn.disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'init') {
+                    // Initialize grid with server state
+                    data.state.forEach((value, index) => {
+                        if (value === 1) {
+                            squares[index].classList.add('white');
+                        } else {
+                            squares[index].classList.remove('white');
+                        }
+                    });
+                } else if (data.type === 'update') {
+                    // Update single square from other user
+                    if (data.value === 1) {
+                        squares[data.index].classList.add('white');
+                    } else {
+                        squares[data.index].classList.remove('white');
+                    }
+                } else if (data.type === 'reset') {
+                    // Reset grid
+                    squares.forEach(square => {
+                        square.classList.remove('white');
+                    });
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                statusEl.textContent = 'Disconnected - Reconnecting...';
+                statusEl.className = 'status disconnected';
+                resetBtn.disabled = true;
+                
+                // Attempt to reconnect after 2 seconds
+                setTimeout(connect, 2000);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Create the grid
+        function createGrid() {
+            grid.innerHTML = '';
+            squares = [];
+            
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                const square = document.createElement('div');
+                square.className = 'square';
+                square.dataset.index = i;
+                square.addEventListener('mousedown', startDrawing);
+                square.addEventListener('mouseenter', continueDrawing);
+                square.addEventListener('mouseup', stopDrawing);
+                grid.appendChild(square);
+                squares.push(square);
+            }
+        }
+
+        // Send update to server
+        function sendUpdate(index, isWhite) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'update',
+                    index: index,
+                    value: isWhite ? 1 : 0
+                }));
+            }
+        }
+
+        // Start drawing on mouse down
+        function startDrawing(event) {
+            isDrawing = true;
+            const index = parseInt(event.target.dataset.index);
+            
+            // Set draw mode based on current square state
+            if (event.target.classList.contains('white')) {
+                drawMode = 'black';
+                event.target.classList.remove('white');
+                sendUpdate(index, false);
+            } else {
+                drawMode = 'white';
+                event.target.classList.add('white');
+                sendUpdate(index, true);
+            }
+        }
+
+        // Continue drawing when mouse enters a square while held down
+        function continueDrawing(event) {
+            if (isDrawing) {
+                const index = parseInt(event.target.dataset.index);
+                
+                if (drawMode === 'white') {
+                    if (!event.target.classList.contains('white')) {
+                        event.target.classList.add('white');
+                        sendUpdate(index, true);
+                    }
+                } else {
+                    if (event.target.classList.contains('white')) {
+                        event.target.classList.remove('white');
+                        sendUpdate(index, false);
+                    }
+                }
+            }
+        }
+
+        // Stop drawing on mouse up
+        function stopDrawing() {
+            isDrawing = false;
+            drawMode = null;
+        }
+
+        // Stop drawing if mouse leaves the document
+        document.addEventListener('mouseup', stopDrawing);
+
+        // Reset grid
+        function resetGrid() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'reset'
+                }));
+                
+                // Also reset locally
+                squares.forEach(square => {
+                    square.classList.remove('white');
+                });
+            }
+        }
+
+        // Initialize
+        createGrid();
+        connect();
+    </script>
+</body>
+</html>
