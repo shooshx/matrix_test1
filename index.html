@@ -58,6 +58,16 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             touch-action: none;
             margin: 20px;
+            max-width: calc(100vw - 40px);
+            overflow: hidden;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(50, 10px);
+            grid-template-rows: repeat(50, 10px);
+            gap: 1px;
+            background-color: #666;
         }
 
         /* Mobile responsive adjustments */
@@ -72,7 +82,14 @@
             }
 
             #grid-container {
-                margin: 15px;
+                margin: 15px 5px;
+                max-width: calc(100vw - 10px);
+                transform-origin: top center;
+            }
+
+            #grid {
+                transform: scale(0.6);
+                transform-origin: top left;
             }
 
             .status {
@@ -93,6 +110,13 @@
             .qr-code {
                 width: 250px;
                 height: 250px;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 400px) {
+            #grid {
+                transform: scale(0.5);
             }
         }
 
@@ -171,7 +195,7 @@
 
     <div class="qr-container">
         <div class="qr-title">Share this page:</div>
-        <img src="qr_code2.png" alt="QR Code" class="qr-code">
+        <img src="qr_code.png" alt="QR Code" class="qr-code">
         <div class="qr-url">matrix-test1.onrender.com</div>
     </div>
 
