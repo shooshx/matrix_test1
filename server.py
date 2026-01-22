@@ -1,7 +1,8 @@
 import asyncio
 import json
+import os
+from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from typing import Set
 import uvicorn
@@ -16,12 +17,13 @@ grid_state = [0] * (GRID_SIZE * GRID_SIZE)
 # Connected clients
 clients: Set[WebSocket] = set()
 
-# Serve static files
-app.mount("/static", StaticFiles(directory="public"), name="static")
+# Get the directory where server.py is located
+BASE_DIR = Path(__file__).resolve().parent
 
 @app.get("/")
 async def read_root():
-    return FileResponse("public/index.html")
+    html_path = BASE_DIR / "index.html"
+    return FileResponse(str(html_path))
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
