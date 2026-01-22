@@ -112,6 +112,38 @@
             font-size: 14px;
             text-align: center;
         }
+
+        .qr-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .qr-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .qr-code {
+            display: block;
+            margin: 0 auto;
+            width: 500px;
+            height: 500px;
+            border: 2px solid #333;
+            border-radius: 4px;
+        }
+
+        .qr-url {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -129,6 +161,12 @@
 
     <div class="info">
         Click and drag to draw. Changes are shared with all users in real-time!
+    </div>
+
+    <div class="qr-container">
+        <div class="qr-title">Share this page:</div>
+        <img src="qr_code.png" alt="QR Code" class="qr-code">
+        <div class="qr-url">matrix-test1.onrender.com</div>
     </div>
 
     <script>
