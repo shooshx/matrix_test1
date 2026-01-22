@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import FileResponse
 from typing import Set
 import uvicorn
@@ -24,6 +24,14 @@ BASE_DIR = Path(__file__).resolve().parent
 async def read_root():
     html_path = BASE_DIR / "index.html"
     return FileResponse(str(html_path))
+
+@app.get("/{filename}")
+async def serve_file(filename: str):
+    """Serve any static file from the same directory"""
+    file_path = BASE_DIR / filename
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(str(file_path))
+    raise HTTPException(status_code=404, detail="File not found")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -89,4 +97,5 @@ async def websocket_endpoint(websocket: WebSocket):
             clients.remove(websocket)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
