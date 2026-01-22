@@ -20,17 +20,32 @@ clients: Set[WebSocket] = set()
 # Get the directory where server.py is located
 BASE_DIR = Path(__file__).resolve().parent
 
+# Debug: Print base directory and files on startup
+print(f"[DEBUG] Base directory: {BASE_DIR}")
+print(f"[DEBUG] Files in directory:")
+for item in BASE_DIR.iterdir():
+    print(f"  - {item.name} ({'file' if item.is_file() else 'dir'})")
+
 @app.get("/")
 async def read_root():
     html_path = BASE_DIR / "index.html"
+    print(f"[DEBUG] Serving index.html from: {html_path}")
+    print(f"[DEBUG] index.html exists: {html_path.exists()}")
     return FileResponse(str(html_path))
 
 @app.get("/{filename}")
 async def serve_file(filename: str):
     """Serve any static file from the same directory"""
     file_path = BASE_DIR / filename
+    print(f"[DEBUG] Request for file: {filename}")
+    print(f"[DEBUG] Full path: {file_path}")
+    print(f"[DEBUG] File exists: {file_path.exists()}")
+    print(f"[DEBUG] Is file: {file_path.is_file() if file_path.exists() else 'N/A'}")
+    
     if file_path.exists() and file_path.is_file():
         return FileResponse(str(file_path))
+    
+    print(f"[DEBUG] File not found: {filename}")
     raise HTTPException(status_code=404, detail="File not found")
 
 @app.websocket("/ws")
